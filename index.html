@@ -16,22 +16,28 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    font-family: 'Arial', sans-serif;
+    background: #1a1a1a;
+    font-family: 'Courier New', monospace;
 }
 
 .game-container {
     position: relative;
     width: 800px;
     height: 600px;
-    border: 3px solid #fff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 4px solid #fff;
+    box-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
     background: #87ceeb;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
 canvas {
     display: block;
     background: linear-gradient(180deg, #87ceeb 0%, #e0f6ff 100%);
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
 .hud {
@@ -41,18 +47,20 @@ canvas {
     right: 10px;
     display: flex;
     justify-content: space-between;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: bold;
-    color: #333;
-    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+    color: #fff;
+    text-shadow: 2px 2px 0px #000, -2px -2px 0px #000;
     z-index: 10;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
 }
 
 .score, .timer {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(0, 0, 0, 0.7);
     padding: 8px 16px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(0, 200, 255, 0.7);
 }
 
 .game-over {
@@ -62,7 +70,7 @@ canvas {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.95);
     z-index: 100;
     justify-content: center;
     align-items: center;
@@ -73,38 +81,45 @@ canvas {
 }
 
 .game-over-content {
-    background: #fff;
+    background: #000;
     padding: 40px;
-    border-radius: 15px;
+    border: 4px solid #fff;
     text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
 }
 
 .game-over-content h1 {
     font-size: 48px;
-    color: #e74c3c;
+    color: #ff0000;
     margin-bottom: 20px;
+    text-shadow: 2px 2px 0px #00ffff;
+    font-family: 'Courier New', monospace;
 }
 
 .game-over-content p {
     font-size: 28px;
-    color: #333;
+    color: #ffff00;
     margin-bottom: 30px;
+    font-family: 'Courier New', monospace;
 }
 
 .game-over-content button {
     padding: 12px 30px;
     font-size: 20px;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 8px;
+    background: #00ffff;
+    color: #000;
+    border: 3px solid #fff;
+    border-radius: 0;
     cursor: pointer;
-    transition: background 0.3s;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    transition: all 0.2s;
 }
 
 .game-over-content button:hover {
-    background: #764ba2;
+    background: #ffff00;
+    box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
 }
     </style>
 </head>
@@ -112,14 +127,14 @@ canvas {
     <div class="game-container">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div class="hud">
-            <div class="score">Score: <span id="score">0</span></div>
-            <div class="timer">Time: <span id="timer">0</span>s</div>
+            <div class="score">SCORE <span id="score">001600</span></div>
+            <div class="timer">TIME <span id="timer">02:39</span></div>
         </div>
         <div class="game-over" id="gameOver">
             <div class="game-over-content">
                 <h1>GAME OVER!</h1>
-                <p>Final Score: <span id="finalScore">0</span></p>
-                <button onclick="location.reload()">Play Again</button>
+                <p>FINAL SCORE: <span id="finalScore">0</span></p>
+                <button onclick="location.reload()">PLAY AGAIN</button>
             </div>
         </div>
     </div>
@@ -127,34 +142,37 @@ canvas {
 // Game Canvas Setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
 
 // Game Variables
 let gameRunning = true;
 let score = 0;
 let time = 0;
 let gameStartTime = Date.now();
+let frameCount = 0;
 
 // Cat Player Object
 const cat = {
     x: 100,
     y: canvas.height / 2,
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 24,
     velocityY: 0,
-    gravity: 0.5,
-    jumpPower: -12,
-    color: '#ff9800'
+    gravity: 0.4,
+    jumpPower: -10,
+    color: '#ff9800',
+    wingFrame: 0
 };
 
-// Obstacles Array
+// Obstacles Array (flying insects)
 let obstacles = [];
 let obstacleTimer = 0;
-const OBSTACLE_SPAWN_RATE = 120; // frames between spawns
+const OBSTACLE_SPAWN_RATE = 100;
 
-// Collectibles Array
+// Collectibles Array (bushes)
 let collectibles = [];
 let collectibleTimer = 0;
-const COLLECTIBLE_SPAWN_RATE = 100;
+const COLLECTIBLE_SPAWN_RATE = 80;
 
 // Input Handling
 let isSpacePressed = false;
@@ -178,28 +196,35 @@ window.addEventListener('click', () => {
     }
 });
 
-// Obstacle Class
+// Obstacle Class (Insects/Flies)
 class Obstacle {
     constructor() {
-        this.width = 60;
-        this.height = Math.random() * 150 + 50;
+        this.width = 16;
+        this.height = 16;
         this.x = canvas.width;
-        this.y = Math.random() * (canvas.height - this.height);
-        this.speed = 5;
-        this.color = '#e74c3c';
+        this.y = Math.random() * (canvas.height - 60) + 30;
+        this.speed = 4;
+        this.wobble = Math.random() * Math.PI * 2;
+        this.wobbleSpeed = Math.random() * 0.05 + 0.02;
     }
 
     update() {
         this.x -= this.speed;
+        this.wobble += this.wobbleSpeed;
+        this.y += Math.sin(this.wobble) * 0.5;
     }
 
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        // Draw warning color
-        ctx.strokeStyle = '#c0392b';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
+        // Draw insect/fly
+        ctx.fillStyle = '#333';
+        // Body
+        ctx.fillRect(this.x + 6, this.y + 6, 4, 8);
+        // Head
+        ctx.fillRect(this.x + 5, this.y + 4, 6, 2);
+        // Wings
+        ctx.fillStyle = '#999';
+        ctx.fillRect(this.x + 2, this.y + 7, 3, 4);
+        ctx.fillRect(this.x + 11, this.y + 7, 3, 4);
     }
 
     isOffScreen() {
@@ -207,14 +232,14 @@ class Obstacle {
     }
 }
 
-// Collectible Class
+// Collectible Class (Bushes/Plants)
 class Collectible {
     constructor() {
-        this.radius = 8;
+        this.width = 24;
+        this.height = 24;
         this.x = canvas.width + 20;
-        this.y = Math.random() * (canvas.height - 40) + 20;
-        this.speed = 5;
-        this.color = '#4caf50';
+        this.y = Math.random() * (canvas.height - 60) + 30;
+        this.speed = 4;
     }
 
     update() {
@@ -222,53 +247,67 @@ class Collectible {
     }
 
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#388e3c';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        // Draw pixelated bush
+        ctx.fillStyle = '#4caf50';
+        // Main bush shape
+        ctx.fillRect(this.x + 6, this.y + 12, 12, 12);
+        ctx.fillRect(this.x + 4, this.y + 8, 4, 6);
+        ctx.fillRect(this.x + 16, this.y + 8, 4, 6);
+        ctx.fillRect(this.x + 8, this.y + 4, 8, 6);
+        
+        ctx.fillStyle = '#5cbf60';
+        ctx.fillRect(this.x + 10, this.y + 6, 4, 4);
+        ctx.fillRect(this.x + 8, this.y + 10, 3, 3);
+        ctx.fillRect(this.x + 14, this.y + 10, 3, 3);
     }
 
     isOffScreen() {
-        return this.x + this.radius < 0;
+        return this.x + this.width < 0;
     }
 }
 
 // Draw Cat
 function drawCat() {
+    const x = cat.x;
+    const y = cat.y;
+    
+    // Draw cute pixelated cat
+    ctx.fillStyle = cat.color;
+    
     // Body
-    ctx.fillStyle = cat.color;
-    ctx.fillRect(cat.x, cat.y, cat.width, cat.height);
-
+    ctx.fillRect(x + 8, y + 8, 16, 12);
+    
     // Head
-    ctx.fillStyle = cat.color;
-    ctx.beginPath();
-    ctx.arc(cat.x + cat.width - 8, cat.y + 10, 12, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.fillRect(x + 6, y + 2, 10, 10);
+    
     // Ears
     ctx.fillStyle = cat.color;
-    ctx.beginPath();
-    ctx.moveTo(cat.x + cat.width - 15, cat.y);
-    ctx.lineTo(cat.x + cat.width - 10, cat.y - 8);
-    ctx.lineTo(cat.x + cat.width - 5, cat.y);
-    ctx.fill();
-
+    ctx.fillRect(x + 6, y, 3, 3);
+    ctx.fillRect(x + 17, y, 3, 3);
+    ctx.fillStyle = '#ffccaa';
+    ctx.fillRect(x + 7, y + 1, 1, 1);
+    ctx.fillRect(x + 18, y + 1, 1, 1);
+    
     // Eyes
     ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(cat.x + cat.width - 12, cat.y + 8, 2, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.fillRect(x + 8, y + 4, 2, 2);
+    ctx.fillRect(x + 14, y + 4, 2, 2);
+    
+    // Eye shine
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x + 9, y + 4, 1, 1);
+    ctx.fillRect(x + 15, y + 4, 1, 1);
+    
+    // Nose
+    ctx.fillStyle = '#ff99cc';
+    ctx.fillRect(x + 11, y + 7, 2, 1);
+    
     // Tail
-    ctx.strokeStyle = cat.color;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(cat.x + 5, cat.y + 15);
-    ctx.quadraticCurveTo(cat.x - 10, cat.y + 10, cat.x - 15, cat.y + 20);
-    ctx.stroke();
+    ctx.fillStyle = cat.color;
+    cat.wingFrame = (frameCount % 20) < 10 ? 0 : 1;
+    const tailY = y + 12 + (cat.wingFrame ? 2 : 0);
+    ctx.fillRect(x + 24, tailY, 4, 8);
+    ctx.fillRect(x + 22, tailY + 2, 2, 4);
 }
 
 // Collision Detection
@@ -279,23 +318,34 @@ function checkCollision(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-function checkCircleCollision(cat, circle) {
-    const catCenterX = cat.x + cat.width / 2;
-    const catCenterY = cat.y + cat.height / 2;
-    const distance = Math.sqrt(
-        Math.pow(catCenterX - circle.x, 2) +
-        Math.pow(catCenterY - circle.y, 2)
-    );
-    return distance < cat.width / 2 + circle.radius;
+// Draw Parallax Clouds
+function drawClouds() {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    
+    for (let i = 0; i < 5; i++) {
+        const cloudX = (frameCount * 0.2 + i * 300) % (canvas.width + 100);
+        const cloudY = 40 + i * 120;
+        
+        // Pixelated cloud
+        ctx.fillRect(cloudX, cloudY, 8, 4);
+        ctx.fillRect(cloudX + 8, cloudY - 4, 12, 8);
+        ctx.fillRect(cloudX + 20, cloudY, 8, 4);
+        ctx.fillRect(cloudX + 28, cloudY - 2, 8, 6);
+    }
 }
 
 // Update Game State
 function update() {
     if (!gameRunning) return;
 
+    frameCount++;
+    
     // Update time
     time = Math.floor((Date.now() - gameStartTime) / 1000);
-    document.getElementById('timer').textContent = time;
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    document.getElementById('timer').textContent = 
+        String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
     // Apply gravity to cat
     cat.velocityY += cat.gravity;
@@ -333,16 +383,14 @@ function update() {
     for (let i = obstacles.length - 1; i >= 0; i--) {
         obstacles[i].update();
 
-        // Check collision with cat
         if (checkCollision(cat, obstacles[i])) {
             endGame();
         }
 
-        // Remove off-screen obstacles
         if (obstacles[i].isOffScreen()) {
             obstacles.splice(i, 1);
             score += 10;
-            document.getElementById('score').textContent = score;
+            document.getElementById('score').textContent = String(score).padStart(6, '0');
         }
     }
 
@@ -350,11 +398,10 @@ function update() {
     for (let i = collectibles.length - 1; i >= 0; i--) {
         collectibles[i].update();
 
-        // Check collision with cat
-        if (checkCircleCollision(cat, collectibles[i])) {
+        if (checkCollision(cat, collectibles[i])) {
             collectibles.splice(i, 1);
-            score += 25;
-            document.getElementById('score').textContent = score;
+            score += 50;
+            document.getElementById('score').textContent = String(score).padStart(6, '0');
         } else if (collectibles[i].isOffScreen()) {
             collectibles.splice(i, 1);
         }
@@ -363,40 +410,30 @@ function update() {
 
 // Draw Game
 function draw() {
-    // Clear canvas
-    ctx.fillStyle = 'rgba(135, 206, 235, 0.3)';
+    // Clear canvas with gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#87ceeb');
+    gradient.addColorStop(1, '#e0f6ff');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw clouds (background elements)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    for (let i = 0; i < 3; i++) {
-        const cloudY = 50 + i * 150;
-        const cloudX = (time * 0.3 + i * 200) % (canvas.width + 100);
-        drawCloud(cloudX, cloudY);
-    }
-
-    // Draw obstacles
-    obstacles.forEach(obstacle => obstacle.draw());
+    // Draw clouds
+    drawClouds();
 
     // Draw collectibles
     collectibles.forEach(collectible => collectible.draw());
+
+    // Draw obstacles
+    obstacles.forEach(obstacle => obstacle.draw());
 
     // Draw cat
     drawCat();
 }
 
-function drawCloud(x, y) {
-    ctx.beginPath();
-    ctx.arc(x, y, 20, 0, Math.PI * 2);
-    ctx.arc(x + 15, y - 15, 25, 0, Math.PI * 2);
-    ctx.arc(x + 35, y, 20, 0, Math.PI * 2);
-    ctx.fill();
-}
-
 // End Game
 function endGame() {
     gameRunning = false;
-    document.getElementById('finalScore').textContent = score;
+    document.getElementById('finalScore').textContent = String(score).padStart(6, '0');
     document.getElementById('gameOver').classList.add('show');
 }
 
@@ -408,6 +445,7 @@ function gameLoop() {
 }
 
 // Start Game
+document.getElementById('score').textContent = '000000';
 gameLoop();
     </script>
 </body>
